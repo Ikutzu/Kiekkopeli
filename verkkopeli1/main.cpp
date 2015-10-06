@@ -20,7 +20,12 @@ int main()
 				window.close();
 		}
 
-		game.Update((float)clock.restart().asSeconds());
+		if (game.Update((float)clock.restart().asSeconds()))
+		{
+			printf("Shutting down...");
+			Sleep(1000);
+			window.close();
+		}
 
 
 		window.clear();

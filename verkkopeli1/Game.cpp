@@ -16,23 +16,54 @@ Game::~Game()
 void Game::InitializeGame()
 {
 	player = new Player();
-	//wait for server to confirm opponent
+	player->SetYposition(450);
+	WaitForNetwork();
+	
 	opponent = new Player();
+	opponent->SetYposition(50);
 
+	ball = new Ball();
 }
 
-void Game::Update(float dt)
+void Game::WaitForNetwork()
 {
+	KiekkoNetwork::GetInstance();
+}
+
+int Game::Update(float dt)
+{
+	//networking
+	if (KiekkoNetwork::GetInstance()->newPackage)
+	{
+		KiekkoNetwork::ReceivePackage tempRecv;
+		tempRecv = KiekkoNetwork::GetInstance()->GetLatestPackage();
+
+		opponent->SetPosition(tempRecv.enemyPos);
+
+		ball->SetPosition(tempRecv.ballX, tempRecv.ballY);
+		ball->SetSpeed(tempRecv.ballXVel, tempRecv.ballYVel);
+	}
+
 	UpdateInput(dt);
 
 	player->Update(dt);
 	opponent->Update(dt);
-	// UpdateNetwork
+	ball->Update(dt);
+
+	KiekkoNetwork::SendPackage tempSend;
+	tempSend.ownPos = player->GetShape().getPosition().x;
+
+	if (KiekkoNetwork::GetInstance()->SendMsg(tempSend))
+		return 1;
+	
+	return 0;
 }
 
 void Game::Draw()
 {
 	player->Draw(_window);
+	opponent->Draw(_window);
+	ball->Draw(_window);
 }
 
 void Game::UpdateInput(float dt)
@@ -42,3 +73,4 @@ void Game::UpdateInput(float dt)
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
 		player->Move(dt);
 }
+

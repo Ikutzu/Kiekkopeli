@@ -5,11 +5,11 @@ Player::Player()
 {
 	shape.setSize(sf::Vector2f(30.0f, 6.0f));
 	shape.setOrigin(15, 3);
-	shape.setPosition(125, 450);
+	shape.setPosition(125, 0);
 
 	speed = 100;
-}
 
+}
 
 Player::~Player()
 {
@@ -31,6 +31,16 @@ void Player::Update(float dt)
 void Player::Move(float multiplier)
 {
 	shape.move(speed*multiplier, 0.0f);
+}
+
+void Player::SetPosition(float position)
+{
+	shape.setPosition(position, shape.getPosition().y);
+}
+
+void Player::SetYposition(float Yposition)
+{
+	shape.setPosition(shape.getPosition().x, Yposition);
 }
 
 sf::RectangleShape Player::GetShape()
