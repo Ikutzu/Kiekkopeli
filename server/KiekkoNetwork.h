@@ -3,11 +3,12 @@
 #include <WinSock2.h>
 #include <thread>
 #include <mutex>
+#include <vector>
 
 class KiekkoNetwork
 {
 public:
-	struct ReceivePackage
+	struct SendPackage
 	{
 		float playerPos;
 		float enemyPos;
@@ -15,14 +16,14 @@ public:
 		float ballXVel, ballYVel;
 	};
 
-	struct SendPackage
+	struct ReceivePackage
 	{
-		float ownPos;
+		float playerPos;
 	};
 
 
 	~KiekkoNetwork(){
-		closesocket(s);
+		closesocket(ListenSocket);
 		WSACleanup();
 	};
 
@@ -30,10 +31,13 @@ public:
 
 	int SendMsg(SendPackage pckg);
 	int InitializeNetwork();
+	void Update();
 	ReceivePackage GetLatestPackage();
 	void SetLatestPackage(ReceivePackage pckg);
+	
+	
+	std::vector<SOCKET*> activeSocket;
 
-	bool newPackage;
 
 private:
 
@@ -44,16 +48,16 @@ private:
 	void InitValues();
 	char* CreateMessage(SendPackage pckg);
 
-	struct sockaddr_in si_other;
-	int s;
-	int slen;
 	int sendLength;
 	int recvLength;
+
+
 	WSADATA wsa;
+	SOCKET ListenSocket;
+	SOCKET ClientSocket;
 
-	bool paskafix;
-	
-
-	ReceivePackage latestPackage;
+	struct sockaddr_in server;
+	struct sockaddr_in si_other;
+	int slen;
 };
 

@@ -11,6 +11,7 @@ Game::~Game()
 {
 	delete player;
 	delete opponent;
+	delete ball;
 }
 
 void Game::InitializeGame()
@@ -38,6 +39,7 @@ int Game::Update(float dt)
 		KiekkoNetwork::ReceivePackage tempRecv;
 		tempRecv = KiekkoNetwork::GetInstance()->GetLatestPackage();
 
+		player->SetPosition(tempRecv.playerPos);
 		opponent->SetPosition(tempRecv.enemyPos);
 
 		ball->SetPosition(tempRecv.ballX, tempRecv.ballY);
@@ -50,6 +52,8 @@ int Game::Update(float dt)
 	opponent->Update(dt);
 	ball->Update(dt);
 
+	CheckCollision();
+
 	KiekkoNetwork::SendPackage tempSend;
 	tempSend.ownPos = player->GetShape().getPosition().x;
 
@@ -59,11 +63,12 @@ int Game::Update(float dt)
 	return 0;
 }
 
-void Game::Draw()
+void Game::CheckCollision()
 {
-	player->Draw(_window);
-	opponent->Draw(_window);
-	ball->Draw(_window);
+	if (player->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+	{
+		ball->MirrorY();
+	}
 }
 
 void Game::UpdateInput(float dt)
@@ -74,3 +79,9 @@ void Game::UpdateInput(float dt)
 		player->Move(dt);
 }
 
+void Game::Draw()
+{
+	player->Draw(_window);
+	opponent->Draw(_window);
+	ball->Draw(_window);
+}

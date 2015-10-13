@@ -1,7 +1,6 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include "KiekkoNetwork.h"
-#define SERVER "127.0.0.1"
 #define PORT 8888
 
 
@@ -44,64 +43,73 @@ int KiekkoNetwork::InitializeNetwork()
 {
 	InitValues();
 
+	ListenSocket = INVALID_SOCKET;
+	ClientSocket = INVALID_SOCKET;
+
+	slen = sizeof(si_other);
+
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
 		printf("WSAStartup(...) failed! Error code : %d\n", WSAGetLastError());
 		return 1;
 	}
-
-	if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR)
+	
+	if ((ListenSocket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
 	{
 		printf("socket(...) failed! Error code : %d\n", WSAGetLastError());
 		return 1;
 	}
+	
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons(PORT);
 
-	memset((char*)&si_other, 0, slen);
-	si_other.sin_family = AF_INET;
-	si_other.sin_port = htons(PORT);
-	si_other.sin_addr.S_un.S_addr = inet_addr(SERVER);
-
-	recvThreadMutex.lock();
-	std::thread th(ReceiveThread, s, recvLength);
-	th.detach();
-
-	SendPackage temp;
-	temp.ownPos = 1337.1337;
-
-	if (SendMsg(temp))
+	if (bind(ListenSocket, (struct sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
+	{
+		printf("bind(...) failed! Error code : %d\n", WSAGetLastError());
+		closesocket(ListenSocket);
 		return 1;
+	}
 
 	return 0;
 }
 
+void KiekkoNetwork::Update()
+{
+	if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
+	{
+		printf("listen(...) failed! Error code : %d\n", WSAGetLastError());
+		closesocket(ListenSocket);
+		WSACleanup();
+		return;
+	}
+
+	ClientSocket = accept(ListenSocket, NULL, NULL);
+	if (ClientSocket == INVALID_SOCKET)
+	{
+		printf("accept(...) failed! Error code : %d\n", WSAGetLastError());
+		closesocket(ListenSocket);
+		WSACleanup();
+		return;
+	}
+
+	std::thread th(NewClient, ClientSocket);
+}
+
 KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
 {
-	newPackage = false;
-	return latestPackage; 
-};
+	
+}
 
 void KiekkoNetwork::SetLatestPackage(ReceivePackage pckg)
 {
-	newPackage = true;
-	latestPackage = pckg;
+
 }
 
 void KiekkoNetwork::InitValues()
 {
-	paskafix = true;
-	newPackage = true;
-
-	latestPackage.playerPos = 125;
-	latestPackage.enemyPos = 125;
-	latestPackage.ballX = 125;
-	latestPackage.ballY = 250;
-	latestPackage.ballXVel = 100;
-	latestPackage.ballYVel = 100;
-
-	sendLength = sizeof(float) * 1;
-	recvLength = sizeof(float) * 6;
-
-	slen = sizeof(si_other);
+	sendLength = sizeof(float) * 6;
+	recvLength = sizeof(float) * 1;
 }
 
 char* KiekkoNetwork::CreateMessage(SendPackage pckg)
@@ -116,7 +124,25 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg)
 }
 
 //thread
-void ParseMessage(char* buf)
+
+
+std::mutex socketlistmtx;
+
+void AddActiveSocket(SOCKET *s)
+{
+	socketlistmtx.lock();
+	KiekkoNetwork::GetInstance()->activeSocket.push_back(s);
+	socketlistmtx.unlock();
+}
+
+void NewClient(SOCKET ClientSocket)
+{
+	AddActiveSocket(&ClientSocket);
+
+}
+
+
+void ParseMessage(char* buf, int socket)
 {
 	packageLock.lock();
 
@@ -151,7 +177,7 @@ void ReceiveThread(int s, int recvLength)
 			return;
 		}
 
-		ParseMessage(buf);
+		ParseMessage(buf, s);
 	}
 }
 

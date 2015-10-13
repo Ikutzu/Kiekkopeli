@@ -7,20 +7,18 @@
 class Game
 {
 public:
-	Game(sf::RenderWindow* window);
+	Game(){};
 	~Game();
 	void InitializeGame();
 	void WaitForNetwork();
+	int WaitForConnections();
 	int Update(float dt);
 	void CheckCollision();
-	void UpdateInput(float dt);
-	void Draw();
 
 private:
 
-	sf::RenderWindow* _window;
-	Player* player;
-	Player* opponent;
+	Player* player1;
+	Player* player2;
 	Ball* ball;
 	
 };
