@@ -6,7 +6,8 @@
 
 KiekkoNetwork* KiekkoNetwork::instance = nullptr;
 
-void ReceiveThread(int s, int recvLength);
+void NewClient(SOCKET ClientSocket, int id);
+
 std::mutex recvThreadMutex;
 std::mutex packageLock;
 
@@ -21,14 +22,24 @@ KiekkoNetwork* KiekkoNetwork::GetInstance()
 	return instance;
 }
 
+KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
+{
+	packageLock.lock();
+	ReceivePackage temp = latestPackage;
+	packageLock.unlock();
+	return temp;
+}
+
 int KiekkoNetwork::SendMsg(SendPackage pckg)
 {
-	char* buf = CreateMessage(pckg);
-
-	if (sendto(s, buf, sendLength, 0, (struct sockaddr*) &si_other, slen) == SOCKET_ERROR)
+	for (int i = 0; i < activeSocket.size(); i++)
 	{
-		printf("sendto(...) failed! Error code : %d\n", WSAGetLastError());
-		return 1;
+		char* buf = CreateMessage(pckg, i);
+		if (sendto(*activeSocket[i], buf, sendLength, 0, (struct sockaddr*) &si_other, slen) == SOCKET_ERROR)
+		{
+			printf("sendto(...) failed! Error code : %d\n", WSAGetLastError());
+			return 1;
+		}
 	}
 	if (paskafix)
 	{
@@ -54,12 +65,15 @@ int KiekkoNetwork::InitializeNetwork()
 		return 1;
 	}
 	
-	if ((ListenSocket = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
+	ListenSocket = socket(AF_INET, SOCK_DGRAM, 0);
+	if (ListenSocket == INVALID_SOCKET)
 	{
 		printf("socket(...) failed! Error code : %d\n", WSAGetLastError());
 		return 1;
 	}
 	
+
+
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
 	server.sin_port = htons(PORT);
@@ -76,56 +90,69 @@ int KiekkoNetwork::InitializeNetwork()
 
 void KiekkoNetwork::Update()
 {
-	if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
+	123 / 0;
+	if (recvLength = recvfrom(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
 		printf("listen(...) failed! Error code : %d\n", WSAGetLastError());
-		closesocket(ListenSocket);
-		WSACleanup();
+		//closesocket(ListenSocket);
+		//WSACleanup();
 		return;
 	}
+	ClientSocket = INVALID_SOCKET;
 
-	ClientSocket = accept(ListenSocket, NULL, NULL);
+	if (activeSocket.size() < 2)
+		ClientSocket = accept(ListenSocket, NULL, NULL);
+
 	if (ClientSocket == INVALID_SOCKET)
 	{
 		printf("accept(...) failed! Error code : %d\n", WSAGetLastError());
 		closesocket(ListenSocket);
-		WSACleanup();
+		//WSACleanup();
 		return;
 	}
-
-	std::thread th(NewClient, ClientSocket);
-}
-
-KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
-{
 	
+	std::thread th(NewClient, ClientSocket, activeSocket.size());
 }
 
-void KiekkoNetwork::SetLatestPackage(ReceivePackage pckg)
-{
-
-}
 
 void KiekkoNetwork::InitValues()
 {
-	sendLength = sizeof(float) * 6;
-	recvLength = sizeof(float) * 1;
+	paskafix = true;
+
+	sendLength = sizeof(float) * 5;
+	recvLength = sizeof(float) * 2;
 }
 
-char* KiekkoNetwork::CreateMessage(SendPackage pckg)
+char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 {
 	char* buf = (char*)malloc(sendLength);
 	int index = 0;
+	
+	if (id == 0)
+		*((int*)(&buf[index])) = htonl(pckg.player2Pos);
+	else if ( id == 1)
+		*((int*)(&buf[index])) = htonl(pckg.player1Pos);
 
-	*((int*)(&buf[index])) = htonl(pckg.ownPos);
-	index += sizeof(pckg.ownPos);
+	index += sizeof(pckg.player1Pos);
+
+	*((int*)(&buf[index])) = htonl(pckg.ballX);
+	index += sizeof(pckg.ballX);
+	
+	*((int*)(&buf[index])) = htonl(pckg.ballY);
+	index += sizeof(pckg.ballY);
+
+	*((int*)(&buf[index])) = htonl(pckg.ballXVel);
+	index += sizeof(pckg.ballXVel);
+
+	*((int*)(&buf[index])) = htonl(pckg.ballYVel);
+	index += sizeof(pckg.ballYVel);
 
 	return buf;
 }
 
 //thread
 
-
+void ReceiveThread(int s, int id);
 std::mutex socketlistmtx;
 
 void AddActiveSocket(SOCKET *s)
@@ -135,49 +162,43 @@ void AddActiveSocket(SOCKET *s)
 	socketlistmtx.unlock();
 }
 
-void NewClient(SOCKET ClientSocket)
+void NewClient(SOCKET ClientSocket, int id)
 {
 	AddActiveSocket(&ClientSocket);
-
+	ReceiveThread(ClientSocket, id);
 }
 
 
-void ParseMessage(char* buf, int socket)
+void ParseMessage(char* buf, int socket, int id)
 {
 	packageLock.lock();
 
-	KiekkoNetwork::ReceivePackage temp;
-
-	temp.playerPos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
-	temp.enemyPos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 1]))));
-	temp.ballX = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 2]))));
-	temp.ballY = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 3]))));
-	temp.ballXVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 4]))));
-	temp.ballYVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 5]))));
-
-	KiekkoNetwork::GetInstance()->SetLatestPackage(temp);
+	if (id == 0)
+		KiekkoNetwork::GetInstance()->latestPackage.player1Pos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
+	if (id == 1)
+		KiekkoNetwork::GetInstance()->latestPackage.player2Pos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
 
 	packageLock.unlock();
 }
 
-void ReceiveThread(int s, int recvLength)
+void ReceiveThread(int s, int id)
 {
 	struct sockaddr_in si_other;
 	int slen = sizeof(si_other);
-	char* buf = (char*)malloc(recvLength);
+	char* buf = (char*)malloc(sizeof(float));
 
 	recvThreadMutex.lock();
 
 	while (1)
 	{
-		if (recvfrom(s, buf, recvLength, 0, (struct sockaddr*) &si_other, &slen) == SOCKET_ERROR)
+		if (recvfrom(s, buf, sizeof(float), 0, (struct sockaddr*) &si_other, &slen) == SOCKET_ERROR)
 		{
 			printf("recvfrom(...) failed! Error code : %d\n", WSAGetLastError());
 			recvThreadMutex.unlock();
 			return;
 		}
 
-		ParseMessage(buf, s);
+		ParseMessage(buf, s, id);
 	}
 }
 

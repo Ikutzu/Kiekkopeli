@@ -9,7 +9,6 @@ class KiekkoNetwork
 public:
 	struct ReceivePackage
 	{
-		float playerPos;
 		float enemyPos;
 		float ballX, ballY;
 		float ballXVel, ballYVel;

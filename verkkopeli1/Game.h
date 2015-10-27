@@ -12,7 +12,6 @@ public:
 	void InitializeGame();
 	void WaitForNetwork();
 	int Update(float dt);
-	void CheckCollision();
 	void UpdateInput(float dt);
 	void Draw();
 

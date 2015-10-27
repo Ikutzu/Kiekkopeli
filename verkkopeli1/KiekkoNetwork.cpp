@@ -66,7 +66,7 @@ int KiekkoNetwork::InitializeNetwork()
 	th.detach();
 
 	SendPackage temp;
-	temp.ownPos = 1337.1337;
+	temp.ownPos = 125.0;
 
 	if (SendMsg(temp))
 		return 1;
@@ -91,15 +91,14 @@ void KiekkoNetwork::InitValues()
 	paskafix = true;
 	newPackage = true;
 
-	latestPackage.playerPos = 125;
-	latestPackage.enemyPos = 125;
-	latestPackage.ballX = 125;
-	latestPackage.ballY = 250;
-	latestPackage.ballXVel = 100;
-	latestPackage.ballYVel = 100;
+	latestPackage.enemyPos = 0;
+	latestPackage.ballX = 0;
+	latestPackage.ballY = 0;
+	latestPackage.ballXVel = 0;
+	latestPackage.ballYVel = 0;
 
 	sendLength = sizeof(float) * 1;
-	recvLength = sizeof(float) * 6;
+	recvLength = sizeof(float) * 5;
 
 	slen = sizeof(si_other);
 }
@@ -122,12 +121,11 @@ void ParseMessage(char* buf)
 
 	KiekkoNetwork::ReceivePackage temp;
 
-	temp.playerPos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
-	temp.enemyPos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 1]))));
-	temp.ballX = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 2]))));
-	temp.ballY = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 3]))));
-	temp.ballXVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 4]))));
-	temp.ballYVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 5]))));
+	temp.enemyPos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
+	temp.ballX = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 1]))));
+	temp.ballY = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 2]))));
+	temp.ballXVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 3]))));
+	temp.ballYVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 4]))));
 
 	KiekkoNetwork::GetInstance()->SetLatestPackage(temp);
 

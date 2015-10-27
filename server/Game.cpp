@@ -10,12 +10,10 @@ Game::~Game()
 
 void Game::InitializeGame()
 {
-	player1 = new Player();
-	player1->SetYposition(450);
 	WaitForNetwork();
-	
+
+	player1 = new Player();
 	player2 = new Player();
-	player2->SetYposition(50);
 
 	ball = new Ball();
 }
@@ -23,12 +21,17 @@ void Game::InitializeGame()
 void Game::WaitForNetwork()
 {
 	KiekkoNetwork::GetInstance();
+	while (WaitForConnections())
+	{}
 }
 
 int Game::WaitForConnections()
 {
-	
-	return 1;
+	if (KiekkoNetwork::GetInstance()->activeSocket.size() < 2)
+	{
+		KiekkoNetwork::GetInstance()->Update();
+		return 1;
+	}
 
 	return 0;
 }
@@ -37,12 +40,28 @@ int Game::Update(float dt)
 {
 	//networking
 	
+	if (KiekkoNetwork::GetInstance()->newPackage)
+	{
+		KiekkoNetwork::ReceivePackage temp = KiekkoNetwork::GetInstance()->GetLatestPackage();
+
+		player1->SetPosition(temp.player1Pos);
+		player2->SetPosition(temp.player2Pos);
+	}
 
 	ball->Update(dt);
 
 	CheckCollision();
+	
+	KiekkoNetwork::SendPackage temp;
+	temp.player1Pos = player1->GetShape().getPosition().x;
+	temp.player2Pos = player2->GetShape().getPosition().x;
+	temp.ballX = ball->GetShape().getPosition().x;
+	temp.ballY = ball->GetShape().getPosition().y;
+	temp.ballXVel = ball->spdX;
+	temp.ballYVel = ball->spdY;
 
-	if (KiekkoNetwork::GetInstance()->SendMsg())
+	printf("Sending msg");
+	if (KiekkoNetwork::GetInstance()->SendMsg(temp))
 		return 0;
 	
 	return 1;

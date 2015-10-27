@@ -10,33 +10,37 @@ class KiekkoNetwork
 public:
 	struct SendPackage
 	{
-		float playerPos;
-		float enemyPos;
+		float player1Pos;
+		float player2Pos;
 		float ballX, ballY;
 		float ballXVel, ballYVel;
 	};
 
 	struct ReceivePackage
 	{
-		float playerPos;
+		float player1Pos;
+		float player2Pos;
 	};
 
 
 	~KiekkoNetwork(){
 		closesocket(ListenSocket);
+		for (int i = 0; i < activeSocket.size(); i++)
+			closesocket(*activeSocket[i]);
 		WSACleanup();
 	};
 
 	static KiekkoNetwork* GetInstance();
-
+	
 	int SendMsg(SendPackage pckg);
 	int InitializeNetwork();
 	void Update();
-	ReceivePackage GetLatestPackage();
-	void SetLatestPackage(ReceivePackage pckg);
 	
+	ReceivePackage GetLatestPackage();
+	ReceivePackage latestPackage;
 	
 	std::vector<SOCKET*> activeSocket;
+	bool newPackage;
 
 
 private:
@@ -46,7 +50,7 @@ private:
 	
 
 	void InitValues();
-	char* CreateMessage(SendPackage pckg);
+	char* CreateMessage(SendPackage pckg, int id);
 
 	int sendLength;
 	int recvLength;
@@ -59,5 +63,7 @@ private:
 	struct sockaddr_in server;
 	struct sockaddr_in si_other;
 	int slen;
+
+	bool paskafix;
 };
 

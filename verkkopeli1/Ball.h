@@ -14,10 +14,10 @@ public:
 	sf::RectangleShape GetShape();
 	void MirrorX();
 	void MirrorY();
+	float spdX;
+	float spdY;
 
 private:
 
-	float spdX;
-	float spdY;
 	sf::RectangleShape shape;
 };
