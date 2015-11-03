@@ -1,6 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <WinSock2.h>
+#include <ws2tcpip.h>
 #include <thread>
 #include <mutex>
 
@@ -21,7 +22,7 @@ public:
 
 
 	~KiekkoNetwork(){
-		closesocket(s);
+		closesocket(ConnectSocket);
 		WSACleanup();
 	};
 
@@ -44,7 +45,7 @@ private:
 	char* CreateMessage(SendPackage pckg);
 
 	struct sockaddr_in si_other;
-	int s;
+	SOCKET ConnectSocket;
 	int slen;
 	int sendLength;
 	int recvLength;

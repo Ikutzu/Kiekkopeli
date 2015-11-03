@@ -2,7 +2,7 @@
 
 #include "KiekkoNetwork.h"
 #define SERVER "127.0.0.1"
-#define PORT 8888
+#define PORT "8888"
 
 
 KiekkoNetwork* KiekkoNetwork::instance = nullptr;
@@ -26,7 +26,7 @@ int KiekkoNetwork::SendMsg(SendPackage pckg)
 {
 	char* buf = CreateMessage(pckg);
 
-	if (sendto(s, buf, sendLength, 0, (struct sockaddr*) &si_other, slen) == SOCKET_ERROR)
+	if (send(ConnectSocket, buf, sendLength, 0) == SOCKET_ERROR)
 	{
 		printf("sendto(...) failed! Error code : %d\n", WSAGetLastError());
 		return 1;
@@ -50,19 +50,55 @@ int KiekkoNetwork::InitializeNetwork()
 		return 1;
 	}
 
-	if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR)
+	struct addrinfo hints;
+
+	ZeroMemory(&hints, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_flags = AI_PASSIVE;
+
+	struct addrinfo *result = NULL;
+	if (getaddrinfo("127.0.0.1", PORT, &hints, &result) != 0)
 	{
-		printf("socket(...) failed! Error code : %d\n", WSAGetLastError());
+		printf("getaddrinfo failed");
+		//WSACleanup();
 		return 1;
 	}
 
-	memset((char*)&si_other, 0, slen);
-	si_other.sin_family = AF_INET;
-	si_other.sin_port = htons(PORT);
-	si_other.sin_addr.S_un.S_addr = inet_addr(SERVER);
+	struct addrinfo* ptr = NULL;
+
+	for (ptr = result; ptr != NULL; ptr=ptr->ai_next)
+	{
+		ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+	
+		if (ConnectSocket == INVALID_SOCKET)
+		{
+			printf("socket(...) failed! Error code : %d\n", WSAGetLastError());
+			//WSACleanup();
+			return 1;
+		}
+		
+		if (connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
+		{
+			closesocket(ConnectSocket);
+			ConnectSocket = INVALID_SOCKET;
+			continue;
+		}
+		break;
+	}
+	
+	freeaddrinfo(result);
+	if (ConnectSocket == INVALID_SOCKET)
+	{
+		printf("Unable to connect to server!\n");
+		WSACleanup();
+		return 1;
+	}
+
 
 	recvThreadMutex.lock();
-	std::thread th(ReceiveThread, s, recvLength);
+	std::thread th(ReceiveThread, ConnectSocket, recvLength);
 	th.detach();
 
 	SendPackage temp;
@@ -122,8 +158,8 @@ void ParseMessage(char* buf)
 	KiekkoNetwork::ReceivePackage temp;
 
 	temp.enemyPos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
-	temp.ballX = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 1]))));
-	temp.ballY = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 2]))));
+	temp.ballX =	*((float*)ntohl(*((int*)(&buf[sizeof(float) * 1]))));
+	temp.ballY =	*((float*)ntohl(*((int*)(&buf[sizeof(float) * 2]))));
 	temp.ballXVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 3]))));
 	temp.ballYVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 4]))));
 
@@ -134,6 +170,7 @@ void ParseMessage(char* buf)
 
 void ReceiveThread(int s, int recvLength)
 {
+	bool paskafix = true;
 	struct sockaddr_in si_other;
 	int slen = sizeof(si_other);
 	char* buf = (char*)malloc(recvLength);
@@ -142,11 +179,16 @@ void ReceiveThread(int s, int recvLength)
 
 	while (1)
 	{
-		if (recvfrom(s, buf, recvLength, 0, (struct sockaddr*) &si_other, &slen) == SOCKET_ERROR)
+		if (recv(s, buf, recvLength, 0) == SOCKET_ERROR)
 		{
 			printf("recvfrom(...) failed! Error code : %d\n", WSAGetLastError());
 			recvThreadMutex.unlock();
 			return;
+		}
+		if (paskafix)
+		{
+			recvThreadMutex.unlock();
+			paskafix = false;
 		}
 
 		ParseMessage(buf);

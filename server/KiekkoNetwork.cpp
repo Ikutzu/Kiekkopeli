@@ -1,7 +1,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include "KiekkoNetwork.h"
-#define PORT 8888
+#define PORT "8888"
 
 
 KiekkoNetwork* KiekkoNetwork::instance = nullptr;
@@ -35,7 +35,7 @@ int KiekkoNetwork::SendMsg(SendPackage pckg)
 	for (int i = 0; i < activeSocket.size(); i++)
 	{
 		char* buf = CreateMessage(pckg, i);
-		if (sendto(*activeSocket[i], buf, sendLength, 0, (struct sockaddr*) &si_other, slen) == SOCKET_ERROR)
+		if (send(*activeSocket[i], buf, sendLength, 0) == SOCKET_ERROR)
 		{
 			printf("sendto(...) failed! Error code : %d\n", WSAGetLastError());
 			return 1;
@@ -65,20 +65,26 @@ int KiekkoNetwork::InitializeNetwork()
 		return 1;
 	}
 	
-	ListenSocket = socket(AF_INET, SOCK_DGRAM, 0);
+	struct addrinfo hints;
+	ZeroMemory(&hints, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_flags = AI_PASSIVE;
+
+	struct addrinfo *result = NULL;
+	int iResult = getaddrinfo(NULL, PORT, &hints, &result);
+
+
+	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+
 	if (ListenSocket == INVALID_SOCKET)
 	{
 		printf("socket(...) failed! Error code : %d\n", WSAGetLastError());
 		return 1;
 	}
 	
-
-
-	server.sin_family = AF_INET;
-	server.sin_addr.s_addr = INADDR_ANY;
-	server.sin_port = htons(PORT);
-
-	if (bind(ListenSocket, (struct sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
+	if (bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen) == SOCKET_ERROR)
 	{
 		printf("bind(...) failed! Error code : %d\n", WSAGetLastError());
 		closesocket(ListenSocket);
@@ -90,8 +96,7 @@ int KiekkoNetwork::InitializeNetwork()
 
 void KiekkoNetwork::Update()
 {
-	123 / 0;
-	if (recvLength = recvfrom(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
+	if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
 		printf("listen(...) failed! Error code : %d\n", WSAGetLastError());
 		//closesocket(ListenSocket);
@@ -106,18 +111,26 @@ void KiekkoNetwork::Update()
 	if (ClientSocket == INVALID_SOCKET)
 	{
 		printf("accept(...) failed! Error code : %d\n", WSAGetLastError());
-		closesocket(ListenSocket);
+		//closesocket(ListenSocket);
 		//WSACleanup();
 		return;
 	}
-	
+	recvThreadMutex.lock();
 	std::thread th(NewClient, ClientSocket, activeSocket.size());
+	th.detach();
+
+	SendPackage temp = { 0, 0, 0, 0, 0 };
+
+	SendMsg(temp);
 }
 
 
 void KiekkoNetwork::InitValues()
 {
 	paskafix = true;
+
+	latestPackage.player1Pos = 125.0;
+	latestPackage.player2Pos = 125.0;
 
 	sendLength = sizeof(float) * 5;
 	recvLength = sizeof(float) * 2;
@@ -132,6 +145,8 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 		*((int*)(&buf[index])) = htonl(pckg.player2Pos);
 	else if ( id == 1)
 		*((int*)(&buf[index])) = htonl(pckg.player1Pos);
+	else
+		*((int*)(&buf[index])) = htonl(0.0f);
 
 	index += sizeof(pckg.player1Pos);
 
@@ -168,36 +183,43 @@ void NewClient(SOCKET ClientSocket, int id)
 	ReceiveThread(ClientSocket, id);
 }
 
-
 void ParseMessage(char* buf, int socket, int id)
 {
+	float tempFloat = 0.0f;
+	tempFloat = *((float*)ntohl(*((int*)(&buf[0]))));
+
 	packageLock.lock();
 
 	if (id == 0)
-		KiekkoNetwork::GetInstance()->latestPackage.player1Pos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
+		KiekkoNetwork::GetInstance()->latestPackage.player1Pos = tempFloat;
 	if (id == 1)
-		KiekkoNetwork::GetInstance()->latestPackage.player2Pos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
+		KiekkoNetwork::GetInstance()->latestPackage.player2Pos = tempFloat;
 
 	packageLock.unlock();
 }
 
 void ReceiveThread(int s, int id)
 {
-	struct sockaddr_in si_other;
-	int slen = sizeof(si_other);
+	bool paskafix = true;
 	char* buf = (char*)malloc(sizeof(float));
 
 	recvThreadMutex.lock();
 
 	while (1)
 	{
-		if (recvfrom(s, buf, sizeof(float), 0, (struct sockaddr*) &si_other, &slen) == SOCKET_ERROR)
+		memset(buf, 0, sizeof(buf));
+		if (recv(s, buf, sizeof(float), 0) == SOCKET_ERROR)
 		{
 			printf("recvfrom(...) failed! Error code : %d\n", WSAGetLastError());
 			recvThreadMutex.unlock();
 			return;
 		}
-
+		if (paskafix)
+		{
+			recvThreadMutex.unlock();
+			paskafix = false;
+		}
+	
 		ParseMessage(buf, s, id);
 	}
 }

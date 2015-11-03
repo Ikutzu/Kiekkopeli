@@ -1,6 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <WinSock2.h>
+#include <ws2tcpip.h>
 #include <thread>
 #include <mutex>
 #include <vector>
@@ -60,7 +61,6 @@ private:
 	SOCKET ListenSocket;
 	SOCKET ClientSocket;
 
-	struct sockaddr_in server;
 	struct sockaddr_in si_other;
 	int slen;
 

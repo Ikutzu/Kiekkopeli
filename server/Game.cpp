@@ -22,7 +22,8 @@ void Game::WaitForNetwork()
 {
 	KiekkoNetwork::GetInstance();
 	while (WaitForConnections())
-	{}
+	{ }
+	printf("Game Running...");
 }
 
 int Game::WaitForConnections()
