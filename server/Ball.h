@@ -10,12 +10,11 @@ public:
 	void Draw(sf::RenderWindow* win);
 	void Update(float dt);
 	void SetPosition(float x, float y);
-	void SetSpeed(float speedX, float speedY);
+	void SetSpeed(int velocity);
 	sf::RectangleShape GetShape();
-	void MirrorX();
-	void MirrorY();
-	float spdX;
-	float spdY;
+	void CollisionWith(float collisionAngle);
+	float angle;
+	int velocity;
 
 private:
 

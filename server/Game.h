@@ -7,7 +7,7 @@
 class Game
 {
 public:
-	Game(){};
+	Game() : networkTimer(0.0), threadCount(0){};
 	~Game();
 	void InitializeGame();
 	void WaitForNetwork();
@@ -16,6 +16,9 @@ public:
 	void CheckCollision();
 
 private:
+
+	double networkTimer;
+	int threadCount;
 
 	Player* player1;
 	Player* player2;

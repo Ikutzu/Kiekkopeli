@@ -10,14 +10,14 @@ class KiekkoNetwork
 public:
 	struct ReceivePackage
 	{
-		float enemyPos;
-		float ballX, ballY;
-		float ballXVel, ballYVel;
+		int enemyPos;
+		int ballX, ballY;
+		int ballXVel, ballYVel;
 	};
 
 	struct SendPackage
 	{
-		float ownPos;
+		int ownPos;
 	};
 
 

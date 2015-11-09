@@ -4,23 +4,23 @@
 #include <ws2tcpip.h>
 #include <thread>
 #include <mutex>
-#include <vector>
+#include <map>
 
 class KiekkoNetwork
 {
 public:
 	struct SendPackage
 	{
-		float player1Pos;
-		float player2Pos;
-		float ballX, ballY;
-		float ballXVel, ballYVel;
+		int player1Pos;
+		int player2Pos;
+		int ballX, ballY;
+		int ballAngle, ballVelocity;
 	};
 
 	struct ReceivePackage
 	{
-		float player1Pos;
-		float player2Pos;
+		int player1Pos;
+		int player2Pos;
 	};
 
 
@@ -35,12 +35,12 @@ public:
 	
 	int SendMsg(SendPackage pckg);
 	int InitializeNetwork();
-	void Update();
+	void Update(int threadCount);
 	
 	ReceivePackage GetLatestPackage();
 	ReceivePackage latestPackage;
 	
-	std::vector<SOCKET*> activeSocket;
+	std::map<int, SOCKET*> activeSocket;
 	bool newPackage;
 
 

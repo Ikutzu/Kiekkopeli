@@ -3,7 +3,7 @@
 
 Player::Player()
 {
-	shape.setSize(sf::Vector2f(30.0f, 6.0f));
+	shape.setSize(sf::Vector2f(30, 6));
 	shape.setOrigin(15, 3);
 	shape.setPosition(125, 0);
 }
@@ -21,12 +21,12 @@ void Player::Update(float dt)
 		shape.setPosition(235.0f, 450.0f);
 }
 
-void Player::SetPosition(float position)
+void Player::SetPosition(int position)
 {
 	shape.setPosition(position, shape.getPosition().y);
 }
 
-void Player::SetYposition(float Yposition)
+void Player::SetYposition(int Yposition)
 {
 	shape.setPosition(shape.getPosition().x, Yposition);
 }

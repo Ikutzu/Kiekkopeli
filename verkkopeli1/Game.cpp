@@ -1,10 +1,8 @@
 #include "Game.h"
 
 
-Game::Game(sf::RenderWindow* window)
-{
-	_window = window;
-}
+Game::Game(sf::RenderWindow* window) : _window(window), networkTimer(0.0)
+{}
 
 
 Game::~Game()
@@ -32,9 +30,14 @@ void Game::WaitForNetwork()
 
 	KiekkoNetwork::ReceivePackage tempRecv;
 	tempRecv = KiekkoNetwork::GetInstance()->GetLatestPackage();
+
 	while (true)
+	{
+		tempRecv = KiekkoNetwork::GetInstance()->GetLatestPackage();
+
 		if (tempRecv.ballX != 0)
 			break;
+	}
 }
 
 int Game::Update(float dt)
@@ -49,19 +52,23 @@ int Game::Update(float dt)
 		ball->SetPosition(tempRecv.ballX, tempRecv.ballY);
 		ball->SetSpeed(tempRecv.ballXVel, tempRecv.ballYVel);
 	}
-
-	UpdateInput(dt);
+	if (_window->hasFocus())
+		UpdateInput(dt);
 
 	player->Update(dt);
 	opponent->Update(dt);
-	ball->Update(dt);
+	//ball->Update(dt);
 
-
-	KiekkoNetwork::SendPackage tempSend;
-	tempSend.ownPos = player->GetShape().getPosition().x;
-
-	if (KiekkoNetwork::GetInstance()->SendMsg(tempSend))
-		return 1;
+	networkTimer += dt;
+	if (networkTimer >= 0.2)
+	{
+		networkTimer = 0.0;
+		KiekkoNetwork::SendPackage tempSend;
+		tempSend.ownPos = player->GetShape().getPosition().x;
+	
+		if (KiekkoNetwork::GetInstance()->SendMsg(tempSend))
+			return 1;
+	}
 	
 	return 0;
 }

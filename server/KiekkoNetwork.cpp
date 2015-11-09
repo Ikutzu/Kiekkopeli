@@ -27,6 +27,7 @@ KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
 	packageLock.lock();
 	ReceivePackage temp = latestPackage;
 	packageLock.unlock();
+	newPackage = false;
 	return temp;
 }
 
@@ -94,7 +95,7 @@ int KiekkoNetwork::InitializeNetwork()
 	return 0;
 }
 
-void KiekkoNetwork::Update()
+void KiekkoNetwork::Update(int threadCount)
 {
 	if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
@@ -104,9 +105,8 @@ void KiekkoNetwork::Update()
 		return;
 	}
 	ClientSocket = INVALID_SOCKET;
-
-	if (activeSocket.size() < 2)
-		ClientSocket = accept(ListenSocket, NULL, NULL);
+	
+	ClientSocket = accept(ListenSocket, NULL, NULL);
 
 	if (ClientSocket == INVALID_SOCKET)
 	{
@@ -116,11 +116,12 @@ void KiekkoNetwork::Update()
 		return;
 	}
 	recvThreadMutex.lock();
-	std::thread th(NewClient, ClientSocket, activeSocket.size());
+	std::thread th(NewClient, ClientSocket, threadCount);
 	th.detach();
 
 	SendPackage temp = { 0, 0, 0, 0, 0 };
-
+	
+	paskafix = true;
 	SendMsg(temp);
 }
 
@@ -129,12 +130,13 @@ void KiekkoNetwork::InitValues()
 {
 	paskafix = true;
 
-	latestPackage.player1Pos = 125.0;
-	latestPackage.player2Pos = 125.0;
+	latestPackage.player1Pos = 125;
+	latestPackage.player2Pos = 125;
 
-	sendLength = sizeof(float) * 5;
-	recvLength = sizeof(float) * 2;
+	sendLength = sizeof(int) * 5;
+	recvLength = sizeof(int) * 2;
 }
+
 
 char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 {
@@ -146,7 +148,7 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 	else if ( id == 1)
 		*((int*)(&buf[index])) = htonl(pckg.player1Pos);
 	else
-		*((int*)(&buf[index])) = htonl(0.0f);
+		*((int*)(&buf[index])) = htonl(0);
 
 	index += sizeof(pckg.player1Pos);
 
@@ -156,11 +158,11 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 	*((int*)(&buf[index])) = htonl(pckg.ballY);
 	index += sizeof(pckg.ballY);
 
-	*((int*)(&buf[index])) = htonl(pckg.ballXVel);
-	index += sizeof(pckg.ballXVel);
+	*((int*)(&buf[index])) = htonl(pckg.ballAngle);
+	index += sizeof(pckg.ballAngle);
 
-	*((int*)(&buf[index])) = htonl(pckg.ballYVel);
-	index += sizeof(pckg.ballYVel);
+	*((int*)(&buf[index])) = htonl(pckg.ballVelocity);
+	index += sizeof(pckg.ballVelocity);
 
 	return buf;
 }
@@ -170,23 +172,24 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 void ReceiveThread(int s, int id);
 std::mutex socketlistmtx;
 
-void AddActiveSocket(SOCKET *s)
+void AddActiveSocket(SOCKET *s, int id)
 {
 	socketlistmtx.lock();
-	KiekkoNetwork::GetInstance()->activeSocket.push_back(s);
+	KiekkoNetwork::GetInstance()->activeSocket[id] = s;
 	socketlistmtx.unlock();
 }
 
 void NewClient(SOCKET ClientSocket, int id)
 {
-	AddActiveSocket(&ClientSocket);
+	AddActiveSocket(&ClientSocket, id);
 	ReceiveThread(ClientSocket, id);
 }
 
 void ParseMessage(char* buf, int socket, int id)
 {
-	float tempFloat = 0.0f;
-	tempFloat = *((float*)ntohl(*((int*)(&buf[0]))));
+	int tempFloat = 0;
+	
+	tempFloat = ntohl(*((int*)(&buf[0])));
 
 	packageLock.lock();
 
@@ -195,6 +198,7 @@ void ParseMessage(char* buf, int socket, int id)
 	if (id == 1)
 		KiekkoNetwork::GetInstance()->latestPackage.player2Pos = tempFloat;
 
+	KiekkoNetwork::GetInstance()->newPackage = true;
 	packageLock.unlock();
 }
 

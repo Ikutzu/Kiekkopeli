@@ -12,7 +12,6 @@ int main()
 
 	while (game.Update((float)clock.restart().asSeconds()))
 	{
-		
 	}
 
 	return 0;

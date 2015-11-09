@@ -112,9 +112,12 @@ int KiekkoNetwork::InitializeNetwork()
 
 KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
 {
+	packageLock.lock();
+	ReceivePackage temp = latestPackage;
+	packageLock.unlock();
 	newPackage = false;
-	return latestPackage; 
-};
+	return temp;
+}
 
 void KiekkoNetwork::SetLatestPackage(ReceivePackage pckg)
 {
@@ -133,11 +136,12 @@ void KiekkoNetwork::InitValues()
 	latestPackage.ballXVel = 0;
 	latestPackage.ballYVel = 0;
 
-	sendLength = sizeof(float) * 1;
-	recvLength = sizeof(float) * 5;
+	sendLength = sizeof(int) * 1;
+	recvLength = sizeof(int) * 5;
 
 	slen = sizeof(si_other);
 }
+
 
 char* KiekkoNetwork::CreateMessage(SendPackage pckg)
 {
@@ -157,22 +161,21 @@ void ParseMessage(char* buf)
 
 	KiekkoNetwork::ReceivePackage temp;
 
-	temp.enemyPos = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 0]))));
-	temp.ballX =	*((float*)ntohl(*((int*)(&buf[sizeof(float) * 1]))));
-	temp.ballY =	*((float*)ntohl(*((int*)(&buf[sizeof(float) * 2]))));
-	temp.ballXVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 3]))));
-	temp.ballYVel = *((float*)ntohl(*((int*)(&buf[sizeof(float) * 4]))));
+	temp.enemyPos = ntohl(*((int*)(&buf[sizeof(int) * 0])));
+	temp.ballX =	ntohl(*((int*)(&buf[sizeof(int) * 1])));
+	temp.ballY =	ntohl(*((int*)(&buf[sizeof(int) * 2])));
+	temp.ballXVel = ntohl(*((int*)(&buf[sizeof(int) * 3])));
+	temp.ballYVel = ntohl(*((int*)(&buf[sizeof(int) * 4])));
 
 	KiekkoNetwork::GetInstance()->SetLatestPackage(temp);
 
 	packageLock.unlock();
 }
 
+
 void ReceiveThread(int s, int recvLength)
 {
 	bool paskafix = true;
-	struct sockaddr_in si_other;
-	int slen = sizeof(si_other);
 	char* buf = (char*)malloc(recvLength);
 
 	recvThreadMutex.lock();

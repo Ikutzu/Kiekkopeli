@@ -17,6 +17,7 @@ public:
 
 private:
 
+	double networkTimer;
 	sf::RenderWindow* _window;
 	Player* player;
 	Player* opponent;

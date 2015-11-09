@@ -9,8 +9,8 @@ public:
 	Player();
 	~Player();
 	void Update(float dt);
-	void SetPosition(float position);
-	void SetYposition(float Yposition);
+	void SetPosition(int position);
+	void SetYposition(int Yposition);
 	sf::RectangleShape GetShape();
 
 private:
