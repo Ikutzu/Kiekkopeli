@@ -1,5 +1,5 @@
 #include "Ball.h"
-#define PI 3.14159 / 180
+
 
 Ball::Ball()
 {
@@ -8,8 +8,8 @@ Ball::Ball()
 
 	shape.setPosition(125, 250);
 
-	angle = 30;
-	velocity = 100;
+	spdX = 0;
+	spdY = 100;
 }
 
 Ball::~Ball()
@@ -23,32 +23,28 @@ void Ball::Draw(sf::RenderWindow* win)
 
 void Ball::Update(float dt)
 {
-	shape.move((cos(angle*PI)*velocity*dt), (sin(angle*PI)*velocity*dt));
+	shape.move((spdX*dt), (spdY*dt));
 
 	if (shape.getPosition().x < 2.0f)
 	{
 		shape.setPosition(2.0f, shape.getPosition().y);
-		CollisionWith(0.0);
+		MirrorX();
 	}
 	if (shape.getPosition().x > 248.0f)
 	{
 		shape.setPosition(248.0f, shape.getPosition().y);
-		CollisionWith(180.0f);
+		MirrorX();
 	}
 	if (shape.getPosition().y < 2.0f)
 	{
 		shape.setPosition(shape.getPosition().x, 2.0f);
-		CollisionWith(90.0f);
+		MirrorY();
 	}
 	if (shape.getPosition().y > 498.0f)
 	{
 		shape.setPosition(shape.getPosition().x, 498.0f);
-		CollisionWith(270.0f);
-	}	
-	if (angle >= 360)
-		angle -= 360;
-	else if (angle < 0)
-		angle += 360;
+		MirrorY();
+	}
 }
 
 void Ball::SetPosition(float x, float y)
@@ -56,9 +52,10 @@ void Ball::SetPosition(float x, float y)
 	shape.setPosition(x, y);
 }
 
-void Ball::SetSpeed(int velocity)
+void Ball::SetSpeed(float speedX, float speedY)
 {
-	this->velocity = velocity;
+	spdX = speedX;
+	spdY = speedY;
 }
 
 sf::RectangleShape Ball::GetShape()
@@ -66,7 +63,12 @@ sf::RectangleShape Ball::GetShape()
 	return shape;
 }
 
-void Ball::CollisionWith(float collisionAngle)
+void Ball::MirrorX()
 {
-	??? häpiä
+	spdX *= -1;
+}
+
+void Ball::MirrorY()
+{
+	spdY *= -1;
 }

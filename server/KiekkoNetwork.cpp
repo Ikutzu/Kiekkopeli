@@ -147,15 +147,18 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 		*((int*)(&buf[index])) = htonl(pckg.player2Pos);
 	else if ( id == 1)
 		*((int*)(&buf[index])) = htonl(pckg.player1Pos);
-	else
-		*((int*)(&buf[index])) = htonl(0);
-
 	index += sizeof(pckg.player1Pos);
 
-	*((int*)(&buf[index])) = htonl(pckg.ballX);
+	if (id == 0)
+		*((int*)(&buf[index])) = htonl(pckg.ballX);
+	else if (id == 1)
+		*((int*)(&buf[index])) = htonl(250-pckg.ballX);
 	index += sizeof(pckg.ballX);
 	
-	*((int*)(&buf[index])) = htonl(pckg.ballY);
+	if (id == 0)
+		*((int*)(&buf[index])) = htonl(pckg.ballY);
+	else if (id == 1)
+		*((int*)(&buf[index])) = htonl(500-pckg.ballY);
 	index += sizeof(pckg.ballY);
 
 	*((int*)(&buf[index])) = htonl(pckg.ballAngle);

@@ -13,7 +13,9 @@ void Game::InitializeGame()
 	WaitForNetwork();
 
 	player1 = new Player();
+	player1->SetYposition(450);
 	player2 = new Player();
+	player2->SetYposition(50);
 
 	ball = new Ball();
 }
@@ -63,8 +65,8 @@ int Game::Update(float dt)
 		temp.player2Pos = player2->GetShape().getPosition().x;
 		temp.ballX = ball->GetShape().getPosition().x;
 		temp.ballY = ball->GetShape().getPosition().y;
-		temp.ballAngle = ball->angle;
-		temp.ballVelocity = ball->velocity;
+		temp.ballAngle = ball->spdX;
+		temp.ballVelocity = ball->spdY;
 
 		printf("Sending msg");
 		if (KiekkoNetwork::GetInstance()->SendMsg(temp))
@@ -79,19 +81,11 @@ void Game::CheckCollision()
 	//player1
 	if (player1->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
 	{
-		ball->CollisionWith(0.0f);
-	}
-	if (player1->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
-	{
-		ball->CollisionWith(0.0f);
+		ball->MirrorY();
 	}
 	//player2
 	if (player2->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
 	{
-		ball->CollisionWith(0.0f);
-	}
-	if (player2->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
-	{
-		ball->CollisionWith(0.0f);
+		ball->MirrorY();
 	}
 }
