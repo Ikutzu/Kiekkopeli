@@ -4,6 +4,7 @@
 #include <ws2tcpip.h>
 #include <thread>
 #include <mutex>
+#include <string>
 
 class KiekkoNetwork
 {
@@ -34,12 +35,12 @@ public:
 	void SetLatestPackage(ReceivePackage pckg);
 
 	bool newPackage;
+	std::string SERVER;
 
 private:
 
 	KiekkoNetwork(){};
 	static KiekkoNetwork* instance;
-	
 
 	void InitValues();
 	char* CreateMessage(SendPackage pckg);

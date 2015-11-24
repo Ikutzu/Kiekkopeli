@@ -1,4 +1,5 @@
 #include "Game.h"
+#include <iostream>
 
 
 Game::Game(sf::RenderWindow* window) : _window(window), networkTimer(0.0)
@@ -14,10 +15,11 @@ Game::~Game()
 
 void Game::InitializeGame()
 {
+	WaitForNetwork();
+
 	player = new Player();
 	player->SetYposition(450);
-	WaitForNetwork();
-	
+		
 	opponent = new Player();
 	opponent->SetYposition(50);
 
@@ -26,11 +28,16 @@ void Game::InitializeGame()
 
 void Game::WaitForNetwork()
 {
-	KiekkoNetwork::GetInstance();
-
 	KiekkoNetwork::ReceivePackage tempRecv;
 	tempRecv = KiekkoNetwork::GetInstance()->GetLatestPackage();
-
+	int sucksession = 1;
+	while (sucksession)
+	{
+		std::string temp;
+		std::cin >> temp;
+		KiekkoNetwork::GetInstance()->SERVER = temp;
+		sucksession = KiekkoNetwork::GetInstance()->InitializeNetwork();
+	}
 	while (true)
 	{
 		tempRecv = KiekkoNetwork::GetInstance()->GetLatestPackage();

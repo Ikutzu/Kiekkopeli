@@ -8,8 +8,8 @@ Ball::Ball()
 
 	shape.setPosition(125, 250);
 
-	spdX = 0;
-	spdY = 100;
+	spdX = 77;
+	spdY = 77;
 }
 
 Ball::~Ball()

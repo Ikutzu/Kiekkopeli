@@ -57,7 +57,7 @@ int Game::Update(float dt)
 	CheckCollision();
 	
 	networkTimer += dt;
-	if (networkTimer >= 0.0)
+	if (networkTimer >= 0.2)
 	{
 		networkTimer = 0.0;
 		KiekkoNetwork::SendPackage temp;
@@ -68,7 +68,7 @@ int Game::Update(float dt)
 		temp.ballAngle = ball->spdX;
 		temp.ballVelocity = ball->spdY;
 
-		printf("Sending msg");
+		printf("Sending msg\n");
 		if (KiekkoNetwork::GetInstance()->SendMsg(temp))
 			return 0;
 	}

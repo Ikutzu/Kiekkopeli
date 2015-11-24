@@ -1,7 +1,6 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include "KiekkoNetwork.h"
-#define SERVER "127.0.0.1"
 #define PORT "8888"
 
 
@@ -16,7 +15,7 @@ KiekkoNetwork* KiekkoNetwork::GetInstance()
 	if (instance == nullptr)
 	{
 		instance = new KiekkoNetwork();
-		instance->InitializeNetwork();
+		instance->InitValues();
 	}
 
 	return instance;
@@ -42,8 +41,6 @@ int KiekkoNetwork::SendMsg(SendPackage pckg)
 
 int KiekkoNetwork::InitializeNetwork()
 {
-	InitValues();
-
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
 		printf("WSAStartup(...) failed! Error code : %d\n", WSAGetLastError());
@@ -59,10 +56,10 @@ int KiekkoNetwork::InitializeNetwork()
 	hints.ai_flags = AI_PASSIVE;
 
 	struct addrinfo *result = NULL;
-	if (getaddrinfo("127.0.0.1", PORT, &hints, &result) != 0)
+	if (getaddrinfo(SERVER.c_str(), PORT, &hints, &result) != 0)
 	{
-		printf("getaddrinfo failed");
-		//WSACleanup();
+		printf("getaddrinfo(...) failed! Error code: %d\n", WSAGetLastError());
+		WSACleanup();
 		return 1;
 	}
 
@@ -75,16 +72,19 @@ int KiekkoNetwork::InitializeNetwork()
 		if (ConnectSocket == INVALID_SOCKET)
 		{
 			printf("socket(...) failed! Error code : %d\n", WSAGetLastError());
-			//WSACleanup();
+			WSACleanup();
 			return 1;
 		}
 		
 		if (connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
 		{
+			printf("connect(...) failed! Error code : %d\n", WSAGetLastError());
 			closesocket(ConnectSocket);
 			ConnectSocket = INVALID_SOCKET;
 			continue;
 		}
+		else
+			printf("Connect success!\n", WSAGetLastError());
 		break;
 	}
 	

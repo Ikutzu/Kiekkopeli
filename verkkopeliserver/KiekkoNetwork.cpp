@@ -16,6 +16,7 @@ KiekkoNetwork* KiekkoNetwork::GetInstance()
 	if (instance == nullptr)
 	{
 		instance = new KiekkoNetwork();
+		instance->InitValues();
 		instance->InitializeNetwork();
 	}
 
@@ -53,8 +54,6 @@ int KiekkoNetwork::SendMsg(SendPackage pckg)
 
 int KiekkoNetwork::InitializeNetwork()
 {
-	InitValues();
-
 	ListenSocket = INVALID_SOCKET;
 	ClientSocket = INVALID_SOCKET;
 
@@ -63,6 +62,7 @@ int KiekkoNetwork::InitializeNetwork()
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
 		printf("WSAStartup(...) failed! Error code : %d\n", WSAGetLastError());
+		WSACleanup();
 		return 1;
 	}
 	
@@ -82,6 +82,7 @@ int KiekkoNetwork::InitializeNetwork()
 	if (ListenSocket == INVALID_SOCKET)
 	{
 		printf("socket(...) failed! Error code : %d\n", WSAGetLastError());
+		WSACleanup();
 		return 1;
 	}
 	
@@ -89,6 +90,8 @@ int KiekkoNetwork::InitializeNetwork()
 	{
 		printf("bind(...) failed! Error code : %d\n", WSAGetLastError());
 		closesocket(ListenSocket);
+		ListenSocket = INVALID_SOCKET;
+		WSACleanup();
 		return 1;
 	}
 
@@ -101,18 +104,17 @@ void KiekkoNetwork::Update(int threadCount)
 	{
 		printf("listen(...) failed! Error code : %d\n", WSAGetLastError());
 		//closesocket(ListenSocket);
-		//WSACleanup();
+		WSACleanup();
 		return;
 	}
 	ClientSocket = INVALID_SOCKET;
-	
 	ClientSocket = accept(ListenSocket, NULL, NULL);
 
 	if (ClientSocket == INVALID_SOCKET)
 	{
 		printf("accept(...) failed! Error code : %d\n", WSAGetLastError());
 		//closesocket(ListenSocket);
-		//WSACleanup();
+		WSACleanup();
 		return;
 	}
 	recvThreadMutex.lock();
@@ -146,7 +148,7 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 	if (id == 0)
 		*((int*)(&buf[index])) = htonl(pckg.player2Pos);
 	else if ( id == 1)
-		*((int*)(&buf[index])) = htonl(pckg.player1Pos);
+		*((int*)(&buf[index])) = htonl(250-pckg.player1Pos);
 	index += sizeof(pckg.player1Pos);
 
 	if (id == 0)
@@ -199,7 +201,7 @@ void ParseMessage(char* buf, int socket, int id)
 	if (id == 0)
 		KiekkoNetwork::GetInstance()->latestPackage.player1Pos = tempFloat;
 	if (id == 1)
-		KiekkoNetwork::GetInstance()->latestPackage.player2Pos = tempFloat;
+		KiekkoNetwork::GetInstance()->latestPackage.player2Pos = 250-tempFloat;
 
 	KiekkoNetwork::GetInstance()->newPackage = true;
 	packageLock.unlock();
