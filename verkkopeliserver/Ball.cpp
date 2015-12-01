@@ -1,5 +1,5 @@
 #include "Ball.h"
-
+#define PI 3.1415
 
 Ball::Ball()
 {
@@ -8,8 +8,8 @@ Ball::Ball()
 
 	shape.setPosition(125, 250);
 
-	spdX = 77;
-	spdY = 77;
+	angle = 45;
+	speed = 100;
 }
 
 Ball::~Ball()
@@ -23,27 +23,28 @@ void Ball::Draw(sf::RenderWindow* win)
 
 void Ball::Update(float dt)
 {
-	shape.move((spdX*dt), (spdY*dt));
+	shape.move(	cos(angle * PI / 180.0) * speed * dt, 
+				sin(angle * PI / 180.0) * speed * dt);
 
 	if (shape.getPosition().x < 2.0f)
 	{
 		shape.setPosition(2.0f, shape.getPosition().y);
-		MirrorX();
+		CollisionByNormal(0.0f);
 	}
 	if (shape.getPosition().x > 248.0f)
 	{
 		shape.setPosition(248.0f, shape.getPosition().y);
-		MirrorX();
+		CollisionByNormal(180.0f);
 	}
 	if (shape.getPosition().y < 2.0f)
 	{
 		shape.setPosition(shape.getPosition().x, 2.0f);
-		MirrorY();
+		CollisionByNormal(90.0f);
 	}
 	if (shape.getPosition().y > 498.0f)
 	{
 		shape.setPosition(shape.getPosition().x, 498.0f);
-		MirrorY();
+		CollisionByNormal(270.0f);
 	}
 }
 
@@ -52,10 +53,15 @@ void Ball::SetPosition(float x, float y)
 	shape.setPosition(x, y);
 }
 
-void Ball::SetSpeed(float speedX, float speedY)
+void Ball::SetSpeed(float newAngle, float newSpeed)
 {
-	spdX = speedX;
-	spdY = speedY;
+	angle = newAngle;
+	if (angle > 360)
+		angle -= 360.0;
+	if (angle < 0)
+		angle += 360.0;
+
+	speed = newSpeed;
 }
 
 sf::RectangleShape Ball::GetShape()
@@ -63,12 +69,10 @@ sf::RectangleShape Ball::GetShape()
 	return shape;
 }
 
-void Ball::MirrorX()
+void Ball::CollisionByNormal(float normalAngle)
 {
-	spdX *= -1;
-}
+	angle += 180;
 
-void Ball::MirrorY()
-{
-	spdY *= -1;
+	angle -= normalAngle;
+	angle = normalAngle - angle;
 }

@@ -2,9 +2,10 @@
 #include <iostream>
 
 
-Game::Game(sf::RenderWindow* window) : _window(window), networkTimer(0.0)
+Game::Game(sf::RenderWindow* window): 
+	_window(window), 
+	networkTimer(0.0)
 {}
-
 
 Game::~Game()
 {
@@ -49,22 +50,26 @@ void Game::WaitForNetwork()
 
 int Game::Update(float dt)
 {
+
 	//networking
 	if (KiekkoNetwork::GetInstance()->newPackage)
 	{
 		KiekkoNetwork::ReceivePackage tempRecv;
 		tempRecv = KiekkoNetwork::GetInstance()->GetLatestPackage();
-
+		
 		opponent->SetPosition(tempRecv.enemyPos);
+		
 		ball->SetPosition(tempRecv.ballX, tempRecv.ballY);
 		ball->SetSpeed(tempRecv.ballXVel, tempRecv.ballYVel);
 	}
+
 	if (_window->hasFocus())
 		UpdateInput(dt);
 
 	player->Update(dt);
 	opponent->Update(dt);
-	//ball->Update(dt);
+	ball->Update(dt);
+	CheckCollision();
 
 	networkTimer += dt;
 	if (networkTimer >= 0.2)
@@ -78,6 +83,20 @@ int Game::Update(float dt)
 	}
 	
 	return 0;
+}
+
+void Game::CheckCollision()
+{
+	//player1
+	if (player->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+	{
+		ball->CollisionByNormal(270.0f);
+	}
+	//player2
+	if (opponent->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+	{
+		ball->CollisionByNormal(90.0f);
+	}
 }
 
 void Game::UpdateInput(float dt)

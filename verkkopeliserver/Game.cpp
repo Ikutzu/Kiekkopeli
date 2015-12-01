@@ -43,11 +43,10 @@ int Game::WaitForConnections()
 int Game::Update(float dt)
 {
 	//networking
-	
 	if (KiekkoNetwork::GetInstance()->newPackage)
 	{
 		KiekkoNetwork::ReceivePackage temp = KiekkoNetwork::GetInstance()->GetLatestPackage();
-
+				
 		player1->SetPosition(temp.player1Pos);
 		player2->SetPosition(temp.player2Pos);
 	}
@@ -65,10 +64,9 @@ int Game::Update(float dt)
 		temp.player2Pos = player2->GetShape().getPosition().x;
 		temp.ballX = ball->GetShape().getPosition().x;
 		temp.ballY = ball->GetShape().getPosition().y;
-		temp.ballAngle = ball->spdX;
-		temp.ballVelocity = ball->spdY;
+		temp.ballAngle = ball->angle;
+		temp.ballVelocity = ball->speed;
 
-		printf("Sending msg\n");
 		if (KiekkoNetwork::GetInstance()->SendMsg(temp))
 			return 0;
 	}
@@ -81,11 +79,11 @@ void Game::CheckCollision()
 	//player1
 	if (player1->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
 	{
-		ball->MirrorY();
+		ball->CollisionByNormal(270.0f);
 	}
 	//player2
 	if (player2->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
 	{
-		ball->MirrorY();
+		ball->CollisionByNormal(90.0f);
 	}
 }

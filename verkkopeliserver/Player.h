@@ -12,7 +12,7 @@ public:
 	void SetPosition(int position);
 	void SetYposition(int Yposition);
 	sf::RectangleShape GetShape();
-
+	
 private:
 
 	int socket;

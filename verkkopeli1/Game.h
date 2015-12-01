@@ -12,12 +12,16 @@ public:
 	void InitializeGame();
 	void WaitForNetwork();
 	int Update(float dt);
+	void CheckCollision();
 	void UpdateInput(float dt);
 	void Draw();
+
 
 private:
 
 	double networkTimer;
+
+
 	sf::RenderWindow* _window;
 	Player* player;
 	Player* opponent;

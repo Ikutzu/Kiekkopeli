@@ -24,7 +24,8 @@ public:
 	};
 
 
-	~KiekkoNetwork(){
+	~KiekkoNetwork()
+	{
 		closesocket(ListenSocket);
 		for (int i = 0; i < activeSocket.size(); i++)
 			closesocket(*activeSocket[i]);

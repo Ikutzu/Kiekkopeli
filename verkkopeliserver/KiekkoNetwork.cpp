@@ -163,7 +163,10 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 		*((int*)(&buf[index])) = htonl(500-pckg.ballY);
 	index += sizeof(pckg.ballY);
 
-	*((int*)(&buf[index])) = htonl(pckg.ballAngle);
+	if (id == 0)
+		*((int*)(&buf[index])) = htonl(pckg.ballAngle);
+	else if (id == 1)
+		*((int*)(&buf[index])) = htonl(pckg.ballAngle + 180);
 	index += sizeof(pckg.ballAngle);
 
 	*((int*)(&buf[index])) = htonl(pckg.ballVelocity);

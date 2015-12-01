@@ -23,9 +23,9 @@ void Player::Draw(sf::RenderWindow* win)
 void Player::Update(float dt)
 {
 	if (shape.getPosition().x < 15.0f)
-		shape.setPosition(15.0f, 450.0f);
+		shape.setPosition(15.0f, yPosition);
 	if (shape.getPosition().x > 235.0f)
-		shape.setPosition(235.0f, 450.0f);
+		shape.setPosition(235.0f, yPosition);
 }
 
 void Player::Move(float multiplier)
@@ -40,7 +40,8 @@ void Player::SetPosition(float position)
 
 void Player::SetYposition(float Yposition)
 {
-	shape.setPosition(shape.getPosition().x, Yposition);
+	yPosition = Yposition;
+	shape.setPosition(shape.getPosition().x, yPosition);
 }
 
 sf::RectangleShape Player::GetShape()

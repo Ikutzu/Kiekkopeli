@@ -18,6 +18,7 @@ public:
 private:
 
 	float speed;
+	float yPosition;
 	sf::RectangleShape shape;
 };
 
