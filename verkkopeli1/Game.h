@@ -15,12 +15,18 @@ public:
 	void CheckCollision();
 	void UpdateInput(float dt);
 	void Draw();
-
+	void Extrapolate(float dt);
 
 private:
 
 	double networkTimer;
+	double updateTimer;
+	double updateMinusOne;
 
+	float position;
+	float positionMinusOne;
+
+	bool first;
 
 	sf::RenderWindow* _window;
 	Player* player;

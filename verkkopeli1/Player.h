@@ -14,10 +14,10 @@ public:
 	void SetPosition(float position);
 	void SetYposition(float Yposition);
 	sf::RectangleShape GetShape();
+	float speed;
 
 private:
 
-	float speed;
 	float yPosition;
 	sf::RectangleShape shape;
 };

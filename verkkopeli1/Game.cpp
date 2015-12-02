@@ -4,7 +4,12 @@
 
 Game::Game(sf::RenderWindow* window): 
 	_window(window), 
-	networkTimer(0.0)
+	networkTimer(0.0),
+	updateTimer(0.0),
+	updateMinusOne(0.0),
+	position(125.0f),
+	positionMinusOne(125.0f),
+	first(true)
 {}
 
 Game::~Game()
@@ -50,6 +55,7 @@ void Game::WaitForNetwork()
 
 int Game::Update(float dt)
 {
+	updateTimer += dt;
 
 	//networking
 	if (KiekkoNetwork::GetInstance()->newPackage)
@@ -57,11 +63,20 @@ int Game::Update(float dt)
 		KiekkoNetwork::ReceivePackage tempRecv;
 		tempRecv = KiekkoNetwork::GetInstance()->GetLatestPackage();
 		
-		opponent->SetPosition(tempRecv.enemyPos);
-		
+		updateMinusOne = updateTimer;
+		updateTimer = 0;
+
+		opponent->SetPosition(position);
+
 		ball->SetPosition(tempRecv.ballX, tempRecv.ballY);
 		ball->SetSpeed(tempRecv.ballXVel, tempRecv.ballYVel);
+
+		positionMinusOne = position;
+		position = tempRecv.enemyPos;
 	}
+	
+	Extrapolate(dt);
+	
 
 	if (_window->hasFocus())
 		UpdateInput(dt);
@@ -112,4 +127,13 @@ void Game::Draw()
 	player->Draw(_window);
 	opponent->Draw(_window);
 	ball->Draw(_window);
+}
+
+void Game::Extrapolate(float dt)
+{
+	if (position - positionMinusOne != 0)
+		opponent->SetPosition(opponent->GetShape().getPosition().x + ((position - positionMinusOne) / updateMinusOne) * dt);// *((updateMinusOne + dt) / updateMinusOne)));
+
+//	positionMinusOne = position;
+//	position = opponent->GetShape().getPosition().x;
 }
