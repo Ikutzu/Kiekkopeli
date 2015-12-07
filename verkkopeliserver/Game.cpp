@@ -25,7 +25,7 @@ void Game::WaitForNetwork()
 	KiekkoNetwork::GetInstance();
 	while (WaitForConnections())
 	{ }
-	printf("Game Running...");
+	printf("Game Running...\n");
 }
 
 int Game::WaitForConnections()
@@ -68,7 +68,12 @@ int Game::Update(float dt)
 		temp.ballVelocity = ball->speed;
 
 		if (KiekkoNetwork::GetInstance()->SendMsg(temp))
+		{
+			KiekkoNetwork::GetInstance()->CloseConnections();
+			KiekkoNetwork::DeleteInstance();
+
 			return 0;
+		}
 	}
 	
 	return 1;

@@ -28,15 +28,21 @@ public:
 	{
 		closesocket(ListenSocket);
 		for (int i = 0; i < activeSocket.size(); i++)
-			closesocket(*activeSocket[i]);
+		{
+			if (activeSocket[i] != nullptr)
+				closesocket(*activeSocket[i]);
+		}
 		WSACleanup();
 	};
 
+
 	static KiekkoNetwork* GetInstance();
+	static void DeleteInstance();
 	
 	int SendMsg(SendPackage pckg);
 	int InitializeNetwork();
 	void Update(int threadCount);
+	void CloseConnections();
 	
 	ReceivePackage GetLatestPackage();
 	ReceivePackage latestPackage;

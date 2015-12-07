@@ -23,6 +23,12 @@ KiekkoNetwork* KiekkoNetwork::GetInstance()
 	return instance;
 }
 
+void KiekkoNetwork::DeleteInstance()
+{
+	delete instance;
+	instance = nullptr;
+}
+
 KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
 {
 	packageLock.lock();
@@ -36,6 +42,9 @@ int KiekkoNetwork::SendMsg(SendPackage pckg)
 {
 	for (int i = 0; i < activeSocket.size(); i++)
 	{
+		if (activeSocket[i] == nullptr)
+			return 1;
+
 		char* buf = CreateMessage(pckg, i);
 		if (send(*activeSocket[i], buf, sendLength, 0) == SOCKET_ERROR)
 		{
@@ -51,9 +60,10 @@ int KiekkoNetwork::SendMsg(SendPackage pckg)
 	return 0;
 }
 
-
 int KiekkoNetwork::InitializeNetwork()
 {
+	printf("Setting up network...\n");
+
 	ListenSocket = INVALID_SOCKET;
 	ClientSocket = INVALID_SOCKET;
 
@@ -118,6 +128,7 @@ void KiekkoNetwork::Update(int threadCount)
 		return;
 	}
 	recvThreadMutex.lock();
+	
 	std::thread th(NewClient, ClientSocket, threadCount);
 	th.detach();
 
@@ -127,6 +138,21 @@ void KiekkoNetwork::Update(int threadCount)
 	SendMsg(temp);
 }
 
+void KiekkoNetwork::CloseConnections()
+{
+	printf("Shutting down connections...\n");
+
+	for (int i = 0; i < activeSocket.size(); i++)
+	{
+		if (activeSocket[i] != nullptr)
+			closesocket(*(activeSocket[i]));
+	}
+
+	activeSocket.clear();
+
+	closesocket(ListenSocket);
+	WSACleanup();
+}
 
 void KiekkoNetwork::InitValues()
 {
@@ -177,7 +203,7 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 
 //thread
 
-void ReceiveThread(int s, int id);
+void ReceiveThread(SOCKET *s, int id);
 std::mutex socketlistmtx;
 
 void AddActiveSocket(SOCKET *s, int id)
@@ -189,8 +215,13 @@ void AddActiveSocket(SOCKET *s, int id)
 
 void NewClient(SOCKET ClientSocket, int id)
 {
+	printf("Connection %d added...\n", id);
 	AddActiveSocket(&ClientSocket, id);
-	ReceiveThread(ClientSocket, id);
+	ReceiveThread(&ClientSocket, id);
+
+	KiekkoNetwork::GetInstance()->activeSocket[id] = nullptr;
+	
+	printf("Connection %d dead...\n", id);
 }
 
 void ParseMessage(char* buf, int socket, int id)
@@ -210,7 +241,7 @@ void ParseMessage(char* buf, int socket, int id)
 	packageLock.unlock();
 }
 
-void ReceiveThread(int s, int id)
+void ReceiveThread(SOCKET* s, int id)
 {
 	bool paskafix = true;
 	char* buf = (char*)malloc(sizeof(float));
@@ -220,10 +251,13 @@ void ReceiveThread(int s, int id)
 	while (1)
 	{
 		memset(buf, 0, sizeof(buf));
-		if (recv(s, buf, sizeof(float), 0) == SOCKET_ERROR)
+		if (recv(*s, buf, sizeof(float), 0) == SOCKET_ERROR)
 		{
 			printf("recvfrom(...) failed! Error code : %d\n", WSAGetLastError());
-			recvThreadMutex.unlock();
+
+			printf("shutdown failed with error: %d\n", WSAGetLastError());
+			closesocket(*s);
+
 			return;
 		}
 		if (paskafix)
@@ -232,7 +266,7 @@ void ReceiveThread(int s, int id)
 			paskafix = false;
 		}
 	
-		ParseMessage(buf, s, id);
+		ParseMessage(buf, *s, id);
 	}
 }
 
