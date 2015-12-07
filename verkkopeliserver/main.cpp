@@ -17,14 +17,6 @@ void KillGame()
 {
 	delete game;
 	gameIsRunning = false;
-	sf::Clock killer;
-	killer.restart();
-
-	while (true)
-	{
-		if (killer.getElapsedTime().asSeconds() > 5.0)
-			return;
-	}
 }
 
 int main()

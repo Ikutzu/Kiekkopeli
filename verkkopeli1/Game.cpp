@@ -87,7 +87,7 @@ int Game::Update(float dt)
 	CheckCollision();
 
 	networkTimer += dt;
-	if (networkTimer >= 0.2)
+	if (networkTimer >= 0.1)
 	{
 		networkTimer = 0.0;
 		KiekkoNetwork::SendPackage tempSend;

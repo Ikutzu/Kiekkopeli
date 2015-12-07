@@ -25,6 +25,12 @@ KiekkoNetwork* KiekkoNetwork::GetInstance()
 
 void KiekkoNetwork::DeleteInstance()
 {
+	for (int i = 0; i < instance->activeSocket.size();)
+	{
+		if (instance->activeSocket[i] == nullptr)
+			i++;
+	}
+	
 	delete instance;
 	instance = nullptr;
 }
