@@ -9,7 +9,7 @@ Game::Game(sf::RenderWindow* window):
 	updateMinusOne(0.0),
 	position(125.0f),
 	positionMinusOne(125.0f),
-	first(true)
+	collisionHappening(false)
 {}
 
 Game::~Game()
@@ -102,15 +102,25 @@ int Game::Update(float dt)
 
 void Game::CheckCollision()
 {
-	//player1
-	if (player->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+	if (!collisionHappening)
 	{
-		ball->CollisionByNormal(270.0f);
+		//player
+		if (player->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+		{
+			collisionHappening = true;
+			ball->CollisionByNormal(270.0f);
+		}
+		//opponent
+		if (opponent->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+		{
+			collisionHappening = true;
+			ball->CollisionByNormal(90.0f);
+		}
 	}
-	//player2
-	if (opponent->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+	else
 	{
-		ball->CollisionByNormal(90.0f);
+		if (!player->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()) && !opponent->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+			collisionHappening = false;
 	}
 }
 

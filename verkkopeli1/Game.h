@@ -19,14 +19,13 @@ public:
 
 private:
 
+	bool collisionHappening;
 	double networkTimer;
 	double updateTimer;
 	double updateMinusOne;
 
 	float position;
 	float positionMinusOne;
-
-	bool first;
 
 	sf::RenderWindow* _window;
 	Player* player;

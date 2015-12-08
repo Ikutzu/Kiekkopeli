@@ -7,15 +7,17 @@
 class Game
 {
 public:
-	Game() : networkTimer(0.0), threadCount(0){};
+	Game() : networkTimer(0.0), threadCount(0), collisionHappening(false){};
 	~Game();
 	void InitializeGame();
 	void WaitForNetwork();
 	int WaitForConnections();
 	int Update(float dt);
+	void Interpolate(float dt);
 	void CheckCollision();
 
 private:
+	bool collisionHappening;
 
 	double networkTimer;
 	int threadCount;

@@ -50,9 +50,10 @@ int Game::Update(float dt)
 		player1->SetPosition(temp.player1Pos);
 		player2->SetPosition(temp.player2Pos);
 	}
-
+	
 	ball->Update(dt);
 
+	ball->speed += 1*dt;
 	CheckCollision();
 	
 	networkTimer += dt;
@@ -79,16 +80,27 @@ int Game::Update(float dt)
 	return 1;
 }
 
+
 void Game::CheckCollision()
 {
-	//player1
-	if (player1->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
-	{
-		ball->CollisionByNormal(270.0f);
+	if (!collisionHappening)
+	{	
+		//player1
+		if (player1->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+		{
+			collisionHappening = true;
+			ball->CollisionByNormal(270.0f);
+		}
+		//player2
+		if (player2->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+		{
+			collisionHappening = true;
+			ball->CollisionByNormal(90.0f);
+		}
 	}
-	//player2
-	if (player2->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+	else
 	{
-		ball->CollisionByNormal(90.0f);
+		if (!player1->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()) && !player2->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
+			collisionHappening = false;
 	}
 }
