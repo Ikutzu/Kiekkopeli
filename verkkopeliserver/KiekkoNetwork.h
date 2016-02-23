@@ -1,7 +1,9 @@
 #pragma once
 #include <stdio.h>
-#include <WinSock2.h>
-#include <ws2tcpip.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <thread>
 #include <mutex>
 #include <map>
@@ -26,13 +28,13 @@ public:
 
 	~KiekkoNetwork()
 	{
-		closesocket(ListenSocket);
+		shutdown(ListenSocket, SHUT_RDWR);
 		for (int i = 0; i < activeSocket.size(); i++)
 		{
-			if (activeSocket[i] != nullptr)
-				closesocket(*activeSocket[i]);
+			if (activeSocket[i] != 0)
+				shutdown(*activeSocket[i], SHUT_RDWR);
 		}
-		WSACleanup();
+		
 	};
 
 
@@ -47,7 +49,7 @@ public:
 	ReceivePackage GetLatestPackage();
 	ReceivePackage latestPackage;
 	
-	std::map<int, SOCKET*> activeSocket;
+	std::map<int, int*> activeSocket;
 	bool newPackage;
 
 
@@ -55,7 +57,7 @@ private:
 
 	KiekkoNetwork(){};
 	static KiekkoNetwork* instance;
-	
+
 
 	void InitValues();
 	char* CreateMessage(SendPackage pckg, int id);
@@ -63,13 +65,9 @@ private:
 	int sendLength;
 	int recvLength;
 
+	int ListenSocket;
+	int ClientSocket;
 
-	WSADATA wsa;
-	SOCKET ListenSocket;
-	SOCKET ClientSocket;
-
-	struct sockaddr_in si_other;
-	int slen;
 
 	bool paskafix;
 };

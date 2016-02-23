@@ -2,7 +2,7 @@
 #include "Player.h"
 #include "Ball.h"
 #include "KiekkoNetwork.h"
-#include <SFML\Graphics.hpp>
+#include <SFML/Graphics.hpp>
 
 class Game
 {

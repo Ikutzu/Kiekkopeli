@@ -1,7 +1,7 @@
 #include "Game.h"
 
 #include <SFML/Graphics.hpp>
-#include <SFML\System.hpp>
+#include <SFML/System.hpp>
 
 bool gameIsRunning = false;
 Game* game;

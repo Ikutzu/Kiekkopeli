@@ -1,19 +1,20 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-
+#include <memory>
 #include "KiekkoNetwork.h"
-#define PORT "8888"
 
+#define PORT 8888
+#define SOCKET_ERROR -1
+#define INVALID_SOCKET -1
 
-KiekkoNetwork* KiekkoNetwork::instance = nullptr;
+KiekkoNetwork* KiekkoNetwork::instance = 0;
 
-void NewClient(SOCKET ClientSocket, int id);
+void NewClient(int  ClientSocket, int id);
 
 std::mutex recvThreadMutex;
 std::mutex packageLock;
 
 KiekkoNetwork* KiekkoNetwork::GetInstance()
 {
-	if (instance == nullptr)
+	if (instance == 0)
 	{
 		instance = new KiekkoNetwork();
 		instance->InitValues();
@@ -27,12 +28,12 @@ void KiekkoNetwork::DeleteInstance()
 {
 	for (int i = 0; i < instance->activeSocket.size();)
 	{
-		if (instance->activeSocket[i] == nullptr)
+		if (instance->activeSocket[i] == 0)
 			i++;
 	}
-	
+
 	delete instance;
-	instance = nullptr;
+	instance = 0;
 }
 
 KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
@@ -48,13 +49,13 @@ int KiekkoNetwork::SendMsg(SendPackage pckg)
 {
 	for (int i = 0; i < activeSocket.size(); i++)
 	{
-		if (activeSocket[i] == nullptr)
+		if (activeSocket[i] == 0)
 			return 1;
 
 		char* buf = CreateMessage(pckg, i);
 		if (send(*activeSocket[i], buf, sendLength, 0) == SOCKET_ERROR)
 		{
-			printf("sendto(...) failed! Error code : %d\n", WSAGetLastError());
+			printf("sendto(...) failed! Error code ; EI KINOSTA\n");
 			return 1;
 		}
 	}
@@ -73,41 +74,27 @@ int KiekkoNetwork::InitializeNetwork()
 	ListenSocket = INVALID_SOCKET;
 	ClientSocket = INVALID_SOCKET;
 
-	slen = sizeof(si_other);
 
-	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-	{
-		printf("WSAStartup(...) failed! Error code : %d\n", WSAGetLastError());
-		WSACleanup();
-		return 1;
-	}
-	
-	struct addrinfo hints;
-	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
-	hints.ai_flags = AI_PASSIVE;
+	struct sockaddr_in server;
 
-	struct addrinfo *result = NULL;
-	int iResult = getaddrinfo(NULL, PORT, &hints, &result);
+	wmemset((wchar_t*)(&server), 0, sizeof(server));
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = htonl(INADDR_ANY);
+	server.sin_port = PORT;
 
-
-	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	ListenSocket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (ListenSocket == INVALID_SOCKET)
 	{
-		printf("socket(...) failed! Error code : %d\n", WSAGetLastError());
-		WSACleanup();
+		printf("socket(...) failed! Error code : EI KINOSTA\n");
 		return 1;
 	}
-	
-	if (bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen) == SOCKET_ERROR)
+
+	if (bind(ListenSocket, (struct sockaddr*)&server, sizeof(server)) < 0)
 	{
-		printf("bind(...) failed! Error code : %d\n", WSAGetLastError());
-		closesocket(ListenSocket);
+		printf("bind(...) failed! Error code : EI KINOSTA\n" );
+		shutdown(ListenSocket, SHUT_RDWR);
 		ListenSocket = INVALID_SOCKET;
-		WSACleanup();
 		return 1;
 	}
 
@@ -118,28 +105,24 @@ void KiekkoNetwork::Update(int threadCount)
 {
 	if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
-		printf("listen(...) failed! Error code : %d\n", WSAGetLastError());
-		//closesocket(ListenSocket);
-		WSACleanup();
+		printf("listen(...) failed! Error code : EI KINOSTA\n");
 		return;
 	}
 	ClientSocket = INVALID_SOCKET;
-	ClientSocket = accept(ListenSocket, NULL, NULL);
+	ClientSocket = accept(ListenSocket, 0, 0);
 
 	if (ClientSocket == INVALID_SOCKET)
 	{
-		printf("accept(...) failed! Error code : %d\n", WSAGetLastError());
-		//closesocket(ListenSocket);
-		WSACleanup();
+		printf("accept(...) failed! Error code : EI KINOSTA\n");
 		return;
 	}
 	recvThreadMutex.lock();
-	
+
 	std::thread th(NewClient, ClientSocket, threadCount);
 	th.detach();
 
 	SendPackage temp = { 0, 0, 0, 0, 0 };
-	
+
 	paskafix = true;
 	SendMsg(temp);
 }
@@ -150,14 +133,13 @@ void KiekkoNetwork::CloseConnections()
 
 	for (int i = 0; i < activeSocket.size(); i++)
 	{
-		if (activeSocket[i] != nullptr)
-			closesocket(*(activeSocket[i]));
+		if (activeSocket[i] != 0)
+			shutdown(*(activeSocket[i]), SHUT_RDWR);
 	}
 
 	activeSocket.clear();
 
-	closesocket(ListenSocket);
-	WSACleanup();
+	shutdown(ListenSocket, SHUT_RDWR);
 }
 
 void KiekkoNetwork::InitValues()
@@ -176,7 +158,7 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 {
 	char* buf = (char*)malloc(sendLength);
 	int index = 0;
-	
+
 	if (id == 0)
 		*((int*)(&buf[index])) = htonl(pckg.player2Pos);
 	else if ( id == 1)
@@ -209,31 +191,31 @@ char* KiekkoNetwork::CreateMessage(SendPackage pckg, int id)
 
 //thread
 
-void ReceiveThread(SOCKET *s, int id);
+void ReceiveThread(int *s, int id);
 std::mutex socketlistmtx;
 
-void AddActiveSocket(SOCKET *s, int id)
+void AddActiveSocket(int *s, int id)
 {
 	socketlistmtx.lock();
 	KiekkoNetwork::GetInstance()->activeSocket[id] = s;
 	socketlistmtx.unlock();
 }
 
-void NewClient(SOCKET ClientSocket, int id)
+void NewClient(int ClientSocket, int id)
 {
 	printf("Connection %d added...\n", id);
 	AddActiveSocket(&ClientSocket, id);
 	ReceiveThread(&ClientSocket, id);
 
 	KiekkoNetwork::GetInstance()->activeSocket[id] = nullptr;
-	
+
 	printf("Connection %d dead...\n", id);
 }
 
 void ParseMessage(char* buf, int socket, int id)
 {
 	int tempFloat = 0;
-	
+
 	tempFloat = ntohl(*((int*)(&buf[0])));
 
 	packageLock.lock();
@@ -247,7 +229,7 @@ void ParseMessage(char* buf, int socket, int id)
 	packageLock.unlock();
 }
 
-void ReceiveThread(SOCKET* s, int id)
+void ReceiveThread(int* s, int id)
 {
 	bool paskafix = true;
 	char* buf = (char*)malloc(sizeof(float));
@@ -256,13 +238,13 @@ void ReceiveThread(SOCKET* s, int id)
 
 	while (1)
 	{
-		memset(buf, 0, sizeof(buf));
+		wmemset((wchar_t*)buf, 0, sizeof(buf));
 		if (recv(*s, buf, sizeof(float), 0) == SOCKET_ERROR)
 		{
-			printf("recvfrom(...) failed! Error code : %d\n", WSAGetLastError());
+			printf("recvfrom(...) failed! Error code : EI KINOSTA\n");
 
-			printf("shutdown failed with error: %d\n", WSAGetLastError());
-			closesocket(*s);
+			printf("shutdown failed with error: EI KINOSTA\n");
+			shutdown(*s, SHUT_RDWR);
 
 			return;
 		}
@@ -271,7 +253,7 @@ void ReceiveThread(SOCKET* s, int id)
 			recvThreadMutex.unlock();
 			paskafix = false;
 		}
-	
+
 		ParseMessage(buf, *s, id);
 	}
 }
