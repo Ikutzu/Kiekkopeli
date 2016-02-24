@@ -25,39 +25,27 @@ public:
 		int player2Pos;
 	};
 
-
-	~KiekkoNetwork()
-	{
-		shutdown(ListenSocket, SHUT_RDWR);
-		for (int i = 0; i < activeSocket.size(); i++)
-		{
-			if (activeSocket[i] != 0)
-				shutdown(*activeSocket[i], SHUT_RDWR);
-		}
-		
-	};
-
+	~KiekkoNetwork();
 
 	static KiekkoNetwork* GetInstance();
 	static void DeleteInstance();
-	
+
 	int SendMsg(SendPackage pckg);
 	int InitializeNetwork();
-	void Update(int threadCount);
+	int Update(int threadCount);
 	void CloseConnections();
-	
+
 	ReceivePackage GetLatestPackage();
 	ReceivePackage latestPackage;
-	
-	std::map<int, int*> activeSocket;
-	bool newPackage;
 
+	std::map<int, int*> activeSocket;
+	static bool newPackage;
 
 private:
 
-	KiekkoNetwork(){};
-	static KiekkoNetwork* instance;
+	KiekkoNetwork();
 
+	static KiekkoNetwork* instance;
 
 	void InitValues();
 	char* CreateMessage(SendPackage pckg, int id);

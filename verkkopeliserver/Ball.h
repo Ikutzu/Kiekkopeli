@@ -1,5 +1,5 @@
 #pragma once
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 
 class Ball
 {
@@ -7,7 +7,6 @@ class Ball
 public:
 	Ball();
 	~Ball();
-	void Draw(sf::RenderWindow* win);
 	void Update(float dt);
 	void SetPosition(float x, float y);
 	void SetSpeed(float speedX, float speedY);

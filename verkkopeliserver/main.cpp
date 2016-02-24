@@ -1,22 +1,25 @@
 #include "Game.h"
 
-#include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 
 bool gameIsRunning = false;
-Game* game;
+Game* game = 0;
 
 void StartGame()
 {
 	game = new Game();
-	game->InitializeGame();
-	gameIsRunning = true;
+	gameIsRunning = game->InitializeGame();
 }
 
 void KillGame()
 {
-	delete game;
+	if(game != 0)
+		delete game;
+
 	gameIsRunning = false;
+	printf("sleeping\n");
+	sf::sleep(sf::seconds(5.0f));
+	printf("waking up\n");
 }
 
 int main()

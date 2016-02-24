@@ -1,14 +1,24 @@
 #include "Game.h"
 
 
+Game::Game()
+: collisionHappening(false)
+, networkTimer(0.0)
+, threadCount(0)
+, networkInstance(0)
+{}
+
 Game::~Game()
 {
+	if(networkInstance != 0)
+		networkInstance->CloseConnections();
+
 	delete player1;
 	delete player2;
 	delete ball;
 }
 
-void Game::InitializeGame()
+int Game::InitializeGame()
 {
 	WaitForNetwork();
 
@@ -18,13 +28,20 @@ void Game::InitializeGame()
 	player2->SetYposition(50);
 
 	ball = new Ball();
+
+	return 1;
 }
 
 void Game::WaitForNetwork()
 {
-	KiekkoNetwork::GetInstance();
+	printf("Waiting for network...\n");
+
+	while(networkInstance == 0)
+		networkInstance = KiekkoNetwork::GetInstance();
+
+	printf("KiekkoNetwork initialized\nWaiting for players...\n");
 	while (WaitForConnections())
-	{ }
+	{}
 	printf("Game Running...\n");
 }
 
@@ -32,8 +49,8 @@ int Game::WaitForConnections()
 {
 	if (threadCount < 2)
 	{
-		KiekkoNetwork::GetInstance()->Update(threadCount);
-		threadCount++;
+		if(networkInstance->Update(threadCount))
+			threadCount++;
 		return 1;
 	}
 
@@ -43,9 +60,9 @@ int Game::WaitForConnections()
 int Game::Update(float dt)
 {
 	//networking
-	if (KiekkoNetwork::GetInstance()->newPackage)
+	if (KiekkoNetwork::newPackage)
 	{
-		KiekkoNetwork::ReceivePackage temp = KiekkoNetwork::GetInstance()->GetLatestPackage();
+		KiekkoNetwork::ReceivePackage temp = networkInstance->GetLatestPackage();
 				
 		player1->SetPosition(temp.player1Pos);
 		player2->SetPosition(temp.player2Pos);
@@ -68,15 +85,10 @@ int Game::Update(float dt)
 		temp.ballAngle = ball->angle;
 		temp.ballVelocity = ball->speed;
 
-		if (KiekkoNetwork::GetInstance()->SendMsg(temp))
-		{
-			KiekkoNetwork::GetInstance()->CloseConnections();
-			KiekkoNetwork::DeleteInstance();
-			
+		if (networkInstance->SendMsg(temp))
 			return 0;
-		}
 	}
-	
+
 	return 1;
 }
 
@@ -84,7 +96,7 @@ int Game::Update(float dt)
 void Game::CheckCollision()
 {
 	if (!collisionHappening)
-	{	
+	{
 		//player1
 		if (player1->GetShape().getGlobalBounds().intersects(ball->GetShape().getGlobalBounds()))
 		{

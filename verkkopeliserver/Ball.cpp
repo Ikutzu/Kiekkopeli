@@ -16,11 +16,6 @@ Ball::~Ball()
 {
 }
 
-void Ball::Draw(sf::RenderWindow* win)
-{
-	win->draw(shape);
-}
-
 void Ball::Update(float dt)
 {
 	shape.move(	cos(angle * PI / 180.0) * speed * dt, 

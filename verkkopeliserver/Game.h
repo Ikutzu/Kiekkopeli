@@ -2,14 +2,14 @@
 #include "Player.h"
 #include "Ball.h"
 #include "KiekkoNetwork.h"
-#include <SFML/Graphics.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 
 class Game
 {
 public:
-	Game() : networkTimer(0.0), threadCount(0), collisionHappening(false){};
+	Game();
 	~Game();
-	void InitializeGame();
+	int InitializeGame();
 	void WaitForNetwork();
 	int WaitForConnections();
 	int Update(float dt);
@@ -25,6 +25,6 @@ private:
 	Player* player1;
 	Player* player2;
 	Ball* ball;
-	
+	KiekkoNetwork* networkInstance;
 };
 

@@ -15,7 +15,6 @@ public:
 	
 private:
 
-	int socket;
 	sf::RectangleShape shape;
 };
 
