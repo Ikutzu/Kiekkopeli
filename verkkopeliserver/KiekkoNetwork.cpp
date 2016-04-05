@@ -16,15 +16,11 @@ std::mutex socketlistmtx;
 
 KiekkoNetwork* KiekkoNetwork::GetInstance()
 {
-	int hi = 1;
 	if (instance == 0)
 	{
 		instance = new KiekkoNetwork();
 		printf("New Instance\n");
 	}
-
-	while(hi != 0)
-		hi = instance->InitializeNetwork();
 
 	purkka = instance;
 	return instance;
@@ -42,15 +38,6 @@ KiekkoNetwork::KiekkoNetwork()
 KiekkoNetwork::~KiekkoNetwork()
 {
 	instance = 0;
-}
-
-void KiekkoNetwork::DeleteInstance()
-{
-	printf("Deleting KiekkoNetwork::instance\n");
-	instance->CloseConnections();
-
-	delete instance;
-	purkka = 0;
 }
 
 KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
@@ -129,7 +116,7 @@ int KiekkoNetwork::Update(int threadCount)
 	if (listen(ListenSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
 		int errsave = errno;
-		printf("listen(...) failed! Error code : %d\n", errsave);
+//		printf("listen(...) failed! Error code : %d\n", errsave);
 		return 0;
 	}
 	ClientSocket = INVALID_SOCKET;
@@ -137,7 +124,7 @@ int KiekkoNetwork::Update(int threadCount)
 
 	if (ClientSocket == INVALID_SOCKET)
 	{
-		printf("accept(...) failed! Error code : EI KINOSTA\n");
+//		printf("accept(...) failed! Error code : EI KINOSTA\n");
 		return 0;
 	}
 	recvThreadMutex.lock();
@@ -167,12 +154,6 @@ void KiekkoNetwork::CloseConnections()
 	}
 
 	activeSocket.clear();
-
-//	shutdown(ListenSocket, SHUT_RDWR);
-	shutdown(ClientSocket, SHUT_RDWR);
-//	ListenSocket = INVALID_SOCKET;
-	ClientSocket = INVALID_SOCKET;
-
 	printf("Connections shut down %d\n", i);
 }
 
