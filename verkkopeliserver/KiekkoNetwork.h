@@ -28,6 +28,7 @@ public:
 	~KiekkoNetwork();
 
 	static KiekkoNetwork* GetInstance();
+	static void DeleteInstance();
 
 	int SendMsg(SendPackage pckg);
 	int InitializeNetwork();
