@@ -16,15 +16,12 @@ std::mutex socketlistmtx;
 
 KiekkoNetwork* KiekkoNetwork::GetInstance()
 {
-	int hi = 1;
 	if (instance == 0)
 	{
 		instance = new KiekkoNetwork();
+		instance->InitializeNetwork();
 		printf("New Instance\n");
 	}
-
-	while(hi != 0)
-		hi = instance->InitializeNetwork();
 
 	purkka = instance;
 	return instance;
@@ -42,15 +39,6 @@ KiekkoNetwork::KiekkoNetwork()
 KiekkoNetwork::~KiekkoNetwork()
 {
 	instance = 0;
-}
-
-void KiekkoNetwork::DeleteInstance()
-{
-	printf("Deleting KiekkoNetwork::instance\n");
-	instance->CloseConnections();
-
-	delete instance;
-	purkka = 0;
 }
 
 KiekkoNetwork::ReceivePackage KiekkoNetwork::GetLatestPackage()
@@ -167,12 +155,6 @@ void KiekkoNetwork::CloseConnections()
 	}
 
 	activeSocket.clear();
-
-//	shutdown(ListenSocket, SHUT_RDWR);
-	shutdown(ClientSocket, SHUT_RDWR);
-//	ListenSocket = INVALID_SOCKET;
-	ClientSocket = INVALID_SOCKET;
-
 	printf("Connections shut down %d\n", i);
 }
 

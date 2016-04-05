@@ -17,9 +17,6 @@ void KillGame()
 		delete game;
 
 	gameIsRunning = false;
-	printf("sleeping\n");
-	sf::sleep(sf::seconds(5.0f));
-	printf("waking up\n");
 }
 
 int main()
